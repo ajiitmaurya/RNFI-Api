@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use App\Events\TaskCreated;
 
 class TaskController extends Controller
 {
     public function taskList()
     {
-        $tasks = Task::all();
-        return response()->json($tasks);
+        $user = Auth::user();
+        $tasks = Task::where('user_id' , $user->id)->get()->toArray();
+        return response()->json(['tasks' => $tasks]);
     }
 
     // Create new task
@@ -32,8 +34,7 @@ class TaskController extends Controller
         ]);
 
         //Now Send Notification To Login user
-     $user = $request->user();
-     $user->notify(new TaskCreatedNotification($task));
+    broadcast(new TaskCreated($task))->toOthers();
 
         return response()->json([
             'message' => 'Task created successfully',
